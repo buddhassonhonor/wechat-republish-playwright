@@ -1,0 +1,83 @@
+link:
+  - https://www.douyin.com/user/MS4wLjABAAAA6O7EZyfDRYXxJrUTpf91K3tmB4rBROkAw-nYMfld8ss
+
+path: ./Downloaded/
+
+music: true
+cover: true
+avatar: true
+json: true
+
+start_time: ""
+end_time: ""
+
+folderstyle: true
+
+mode:
+  - post
+
+number:
+  post: 1
+  like: 0
+  allmix: 0
+  mix: 0
+  music: 0
+  collect: 0
+  collectmix: 0
+
+increase:
+  post: false
+  like: false
+  allmix: false
+  mix: false
+  music: false
+
+thread: 5
+retry_times: 3
+rate_limit: 1
+proxy: ""
+database: true
+database_path: dy_downloader.db
+
+progress:
+  quiet_logs: true
+
+transcript:
+  enabled: false
+  backend: openai_api
+  model: gpt-4o-mini-transcribe
+  local_model: distil-large-v3
+  output_dir: ""
+  response_formats:
+    - txt
+    - json
+  api_url: https://api.openai.com/v1/audio/transcriptions
+  api_key_env: OPENAI_API_KEY
+  api_key: ""
+  local_device: cuda
+  local_compute_type: float16
+  local_beam_size: 5
+  local_vad_filter: true
+  language_hint: ""
+  audio_chunk_seconds: 150
+  audio_force_chunking_above_seconds: 120
+  audio_min_text_chars: 40
+  ocr_enabled: false
+  subtitle_enabled: true
+  ocr_frame_interval_seconds: 2
+  ocr_max_frames: 12
+  ocr_min_text_length: 6
+
+browser_fallback:
+  enabled: true
+  headless: false
+  max_scrolls: 240
+  idle_rounds: 8
+  wait_timeout_seconds: 600
+
+cookies:
+  msToken: YOUR_MS_TOKEN
+  ttwid: YOUR_TTWID
+  odin_tt: YOUR_ODIN_TT
+  passport_csrf_token: YOUR_CSRF_TOKEN
+  sid_guard: YOUR_SID_GUARD
