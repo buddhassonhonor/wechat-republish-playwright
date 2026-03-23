@@ -44,3 +44,4 @@ config*.yml
 .cookies.json
 config/cookies.json
 .omx/
+matrix/

@@ -4,3 +4,5 @@ douyin-downloader/Downloaded/
 __pycache__/
 wechat_session/
 xiaohongshu-mcp-bin/cookies.json
+matrix/
+douyin-downloader/matrix/

@@ -1,6 +1,26 @@
 # douyin-downloader 使用顺序
 
-下面按实际操作流程整理：先登录抖音，下载作品，再提取文案，最后发布到小红书。
+## 快手自动随机发布
+
+先进入目录并激活环境：
+
+```powershell
+conda activate playwright
+cd D:\github\wechat_republish_playwright\douyin-downloader
+```
+
+快手自动随机发布命令：
+
+```powershell
+python -m tools.ks_auto_publisher -c config.yml --min-hours 3 --max-hours 4
+```
+
+说明：
+- 会从未发布的视频素材里随机抽 1 条发布到快手
+- 每次发布成功后，下一次会在 `3~4` 小时之间随机等待
+- 已发布过的视频会自动跳过
+
+下面按实际操作流程整理：先登录抖音，下载作品，再提取文案，最后发布到小红书或快手。
 
 ## 1. 激活环境
 
@@ -142,8 +162,59 @@ python -m tools.xhs_publish -c config.yml --aweme-id 7436012128940625178
 - `*.xhs_publish_state.json`
   - 发布状态标记
   - `published=true` 表示已经发过，默认不会重复发
+- `*.ks_draft.json`
+  - 快手发布草稿
+- `*.ks_publish_state.json`
+  - 快手发布状态标记
+  - `published=true` 表示已经发过，默认不会重复发
 
-## 7. 推荐执行顺序
+## 7. 发布到快手
+
+### 7.1 先登录快手并保存登录态
+
+首次使用先执行：
+
+```powershell
+python -m tools.ks_login
+```
+
+默认会把快手登录态保存到：
+
+```text
+..\matrix\ks_uploader\account\default_account.json
+```
+
+### 7.2 列出可发视频
+
+```powershell
+python -m tools.ks_publish -c config.yml --list
+```
+
+### 7.3 随机发一条未发布视频到快手
+
+```powershell
+python -m tools.ks_publish -c config.yml --random --publish
+```
+
+### 7.4 指定某条视频发布到快手
+
+```powershell
+python -m tools.ks_publish -c config.yml --aweme-id 7610252027532879091 --publish
+```
+
+### 7.5 允许重发已发布视频
+
+```powershell
+python -m tools.ks_publish -c config.yml --aweme-id 7610252027532879091 --publish --include-published
+```
+
+### 7.6 自动循环随机发布
+
+```powershell
+python -m tools.ks_auto_publisher -c config.yml
+```
+
+## 8. 推荐执行顺序
 
 1. `conda activate playwright`
 2. `python -m tools.cookie_fetcher --config config.yml`
@@ -153,4 +224,7 @@ python -m tools.xhs_publish -c config.yml --aweme-id 7436012128940625178
 6. 启动 `xiaohongshu-mcp-windows-amd64.exe -headless=false`
 7. `python -m tools.xhs_publish -c config.yml --list`
 8. `python -m tools.xhs_publish -c config.yml --random --publish`
+9. `python -m tools.ks_login`
+10. `python -m tools.ks_publish -c config.yml --list`
+11. `python -m tools.ks_publish -c config.yml --random --publish`
 
