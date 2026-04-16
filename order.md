@@ -9,6 +9,10 @@ cd E:\PROJECT\wechat_republish_playwright\douyin-downloader
 
 ..\.venv\Scripts\python.exe -m tools.auto_publisher --once --base-url http://127.0.0.1:18061
 
+快手自动发布：
+cd E:\PROJECT\wechat_republish_playwright\douyin-downloader
+..\.venv\Scripts\python.exe -m tools.ks_auto_publisher --min-hours 3 --max-hours 5 --retry-minutes 3
+
 
 
 # douyin-downloader 使用顺序
@@ -162,7 +166,51 @@ cd E:\PROJECT\wechat_republish_playwright\douyin-downloader
 ..\.venv\Scripts\python.exe -m tools.xhs_publish -c config.yml --aweme-id 7436012128940625178
 ```
 
-## 6. 常用文件说明
+## 6. 发布到快手
+
+### 6.1 快手登录
+
+首次使用需要先登录并保存 Cookie：
+
+```powershell
+cd E:\PROJECT\wechat_republish_playwright\douyin-downloader
+..\.venv\Scripts\python.exe -m tools.ks_login
+```
+
+作用：
+- 打开浏览器
+- 扫码登录你的快手账号
+- 保存登录态到 `../matrix/ks_uploader/account/default_account.json`
+
+### 6.2 先列出可发作品
+
+```powershell
+cd E:\PROJECT\wechat_republish_playwright\douyin-downloader
+..\.venv\Scripts\python.exe -m tools.ks_publish -c config.yml --list
+```
+
+### 6.3 随机发一条未发布作品
+
+```powershell
+cd E:\PROJECT\wechat_republish_playwright\douyin-downloader
+..\.venv\Scripts\python.exe -m tools.ks_publish -c config.yml --random --publish
+```
+
+### 6.4 指定某条作品发布
+
+```powershell
+cd E:\PROJECT\wechat_republish_playwright\douyin-downloader
+..\.venv\Scripts\python.exe -m tools.ks_publish -c config.yml --aweme-id 7436012128940625178 --publish
+```
+
+### 6.5 自动循环发布
+
+```powershell
+cd E:\PROJECT\wechat_republish_playwright\douyin-downloader
+..\.venv\Scripts\python.exe -m tools.ks_auto_publisher -c config.yml --min-hours 3 --max-hours 5
+```
+
+## 7. 常用文件说明
 
 - `Downloaded/download_manifest.jsonl`
   - 下载清单
@@ -174,16 +222,23 @@ cd E:\PROJECT\wechat_republish_playwright\douyin-downloader
 - `*.xhs_draft.json`
   - 小红书发布草稿
 - `*.xhs_publish_state.json`
-  - 发布状态标记
+  - 小红书发布状态标记
+- `*.ks_draft.json`
+  - 快手发布草稿
+- `*.ks_publish_state.json`
+  - 快手发布状态标记
   - `published=true` 表示已经发过，默认不会重复发
 
-## 7. 推荐执行顺序
+## 8. 推荐执行顺序
 
 1. `conda activate playwright`
 2. `python -m tools.cookie_fetcher --config config.yml`
 3. `python run.py -c config.yml`
 4. `python -m tools.text_extractor -c config.yml`
-5. 启动 `xiaohongshu-login-windows-amd64.exe`
-6. 启动 `xiaohongshu-mcp-windows-amd64.exe -headless=false`
-7. `python -m tools.xhs_publish -c config.yml --list`
-8. `python -m tools.xhs_publish -c config.yml --random --publish`
+5. **小红书发布**：
+   - 启动 `xiaohongshu-login-windows-amd64.exe`
+   - 启动 `xiaohongshu-mcp-windows-amd64.exe -headless=false`
+   - `python -m tools.xhs_publish -c config.yml --random --publish`
+6. **快手发布**：
+   - `python -m tools.ks_login` (仅首次)
+   - `python -m tools.ks_publish -c config.yml --random --publish`
