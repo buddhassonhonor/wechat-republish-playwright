@@ -133,8 +133,13 @@ func mustClickPublishTab(page *rod.Page, tabname string) error {
 		}
 
 		if blocked {
-			logrus.Info("发布 TAB 被遮挡，尝试移除遮挡")
+			logrus.Info("发布 TAB 被遮挡，尝试使用 JS 强制点击")
 			removePopCover(page)
+			_, evalErr := tab.Eval("() => this.click()")
+			if evalErr == nil {
+				logrus.Info("JS 强制点击成功")
+				return nil
+			}
 			time.Sleep(200 * time.Millisecond)
 			continue
 		}
@@ -152,9 +157,27 @@ func mustClickPublishTab(page *rod.Page, tabname string) error {
 }
 
 func getTabElement(page *rod.Page, tabname string) (*rod.Element, bool, error) {
-	elems, err := page.Elements("div.creator-tab")
-	if err != nil {
-		return nil, false, err
+	// 小红书创作者中心的 tab class 可能更新，尝试多种选择器
+	selectors := []string{
+		"div.creator-tab", 
+		"div.tab-item", 
+		"div.tab",
+		".upload-tab",
+		"span.tab",
+	}
+	
+	var elems rod.Elements
+	var err error
+	
+	for _, selector := range selectors {
+		elems, err = page.Elements(selector)
+		if err == nil && len(elems) > 0 {
+			break
+		}
+	}
+	
+	if len(elems) == 0 {
+		return nil, false, errors.New("无法找到任何 tab 元素")
 	}
 
 	for _, elem := range elems {
@@ -168,16 +191,13 @@ func getTabElement(page *rod.Page, tabname string) (*rod.Element, bool, error) {
 			continue
 		}
 
-		if strings.TrimSpace(text) != tabname {
-			continue
+		if strings.TrimSpace(text) == tabname || strings.Contains(text, tabname) {
+			blocked, err := isElementBlocked(elem)
+			if err != nil {
+				return nil, false, err
+			}
+			return elem, blocked, nil
 		}
-
-		blocked, err := isElementBlocked(elem)
-		if err != nil {
-			return nil, false, err
-		}
-
-		return elem, blocked, nil
 	}
 
 	return nil, false, nil
@@ -296,7 +316,7 @@ func submitPublish(page *rod.Page, title, content string, tags []string, schedul
 	if err := contentElem.Input(content); err != nil {
 		return errors.Wrap(err, "输入正文失败")
 	}
-	if err := waitAndClickTitleInput(titleElem); err != nil {
+	if err := waitAndClickTitleInput(page); err != nil {
 		return err
 	}
 	if err := inputTags(contentElem, tags); err != nil {
@@ -351,13 +371,25 @@ func submitPublish(page *rod.Page, title, content string, tags []string, schedul
 }
 
 // waitAndClickTitleInput 在填写正文后等待 1 秒并回点标题输入框，增强后续交互稳定性
-func waitAndClickTitleInput(titleElem *rod.Element) error {
+func waitAndClickTitleInput(page *rod.Page) error {
 	slog.Info("正文填写完成，准备等待后回点标题输入框")
 	time.Sleep(1 * time.Second)
-	if err := titleElem.Click(proto.InputMouseButtonLeft, 1); err != nil {
-		return errors.Wrap(err, "回点标题输入框失败")
+
+	// 重新获取元素，防止被框架重新渲染导致原本的引用失效 (Detached DOM)
+	titleElem, err := page.Timeout(5 * time.Second).Element("div.d-input input")
+	if err != nil {
+		slog.Warn("重新查找标题输入框失败", "error", err)
+		return nil // 非致命错误，可以忽略
 	}
-	slog.Info("已回点标题输入框，继续后续发布流程")
+
+	// 使用 Eval 执行点击，避免因为遮挡或 Detached 导致死锁
+	_, err = titleElem.Eval("() => { this.focus(); this.click(); }")
+	if err != nil {
+		slog.Warn("回点标题输入框 JS 点击失败", "error", err)
+	} else {
+		slog.Info("已回点标题输入框，继续后续发布流程")
+	}
+
 	return nil
 }
 
@@ -498,14 +530,18 @@ func inputTag(contentElem *rod.Element, tag string) error {
 		return contentElem.Input(" ")
 	}
 
-	firstItem, err := topicContainer.Element(".item")
+	// 放宽对标签选项的查找条件，增加超时机制，防止因为网络慢或渲染慢导致的 cannot find element
+	firstItem, err := topicContainer.Timeout(3 * time.Second).Element(".item")
 	if err != nil || firstItem == nil {
 		slog.Warn("未找到标签联想选项，直接输入空格", "tag", tag)
 		return contentElem.Input(" ")
 	}
 
-	if err := firstItem.Click(proto.InputMouseButtonLeft, 1); err != nil {
-		return errors.Wrap(err, "点击标签联想选项失败")
+	// 使用 Eval 执行点击，增加鲁棒性，避免由于元素被遮挡或在不可见区域导致的点击失败
+	_, err = firstItem.Eval("() => this.click()")
+	if err != nil {
+		slog.Warn("点击标签联想选项(JS)失败，尝试退而求其次输入空格", "tag", tag, "error", err)
+		return contentElem.Input(" ")
 	}
 	slog.Info("成功点击标签联想选项", "tag", tag)
 	time.Sleep(200 * time.Millisecond)
